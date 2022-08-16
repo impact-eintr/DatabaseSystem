@@ -1,3 +1,6 @@
+-- ****************************
+--          第一节
+-- ****************************
 @/home/eintr/Projects/DatabaseSystem/oracle/sql_file/01_del_data.sql;
 @/home/eintr/Projects/DatabaseSystem/oracle/sql_file/02_hr_cre.sql;
 @/home/eintr/Projects/DatabaseSystem/oracle/sql_file/03_hr_popul.sql;
@@ -55,6 +58,9 @@ from employees;
 select distinct department_id
 from employees;
 
+-- *************************************
+--               第二节
+-- *************************************
 
 -- where 过滤
 select last_name, hire_date
@@ -145,6 +151,10 @@ where
     last_name like '%a%e%' 
     or 
     last_name like '%e%a%'; 
+
+-- *********************************
+--          第三节
+-- *********************************
 
 -- 单行函数
     -- 字符
@@ -312,6 +322,9 @@ case job_id when 'AD_PRES 'then 'A'
             when 'ST_CLERK' then 'E' end  "Grade"
 from employees;
 
+-- **************************************
+--                 第四节
+-- **************************************
 
 -- 多表查询
 select 
@@ -425,6 +438,10 @@ e.last_name "employees", e.employee_id "Emp#", m.last_name "manager", m.employee
 from employees e, employees m
 where e.manager_id = m.employee_id;
 
+
+-- *********************************************
+--                 第五节
+-- *********************************************
 
 -- 多行函数（分组函数）
 -- 在 SELECT 列表中所有未包含在组函数中的列都应该包含在 GROUP BY 子句中
@@ -560,6 +577,285 @@ select count(*) "total",
 from employees
 where to_char(hire_date,'yyyy') in ('1995','1996','1997','1998');
 
+-- ****************************************
+--                第六节
+-- ****************************************
+
+-- 子查询
+
+-- 谁的工资比 Abel 高？
+select last_name, salary
+from employees
+where salary > (
+    select salary
+    from employees
+    where last_name = 'Abel');
+    
+select last_name, salary
+from employees
+where employee_id = (
+    select manager_id
+    from employees
+    where last_name = 'Chen');
+    
+select last_name, job_id, salary
+from employees
+where salary = (
+    select min(salary)
+    from employees);
+
+-- 查询最低该工资大于50号部门最低工资的部门id和最低工资
+select department_id, min(salary)
+from employees
+where department_id is not null
+group by department_id
+having min(salary) > (
+    select min(salary)
+    from employees
+    where department_id = 50);
+
+-- 返回其他部门中比job_id为'IT_PROG'部门任一工资低的员工的员工号、姓名、job_id以及salary
+select employee_id, last_name, job_id, salary
+from employees
+where job_id != 'IT_PROG' and salary < any(
+    select salary
+    from employees
+    where job_id = 'IT_PROG');
+
+-- any()/some() 用于将值与子查询返回的结果列表进行比较 相当于数个 OR 串联 用于“任一”
+select salary 
+from employees
+where salary < any(
+    select salary
+    from employees 
+    where job_id = 'IT_PROG');
+    
+-- all() 相当于 and 串联 用于“任意 ”
+select salary 
+from employees
+where salary < all(
+    select salary
+    from employees 
+    where job_id = 'IT_PROG');
 
 
 
+-- 40. 谁的工资比 Abel 高?		
+SELECT last_name, salary
+FROM employees
+WHERE salary > (
+    SELECT salary
+	FROM employees
+	WHERE last_name = 'Abel');
+		
+--41. 子查询注意: 
+	--1). 子查询要包含在括号内
+	--2). 将子查询放在比较条件的右侧	
+
+		
+--42. 查询工资最低的员工信息: last_name, salary	
+select last_name, salary
+from employees
+where salary = (
+    select min(salary)
+    from employees);
+		
+--43. 查询平均工资最低的部门信息
+select *
+from departments
+where department_id = (
+    select department_id
+    from employees
+    having avg(salary) = (
+        select min(avg(salary))
+        from employees
+        group by department_id)
+    group by department_id);
+
+--查询平均工资最低的部门信息和该部门的平均工资
+select 
+    d.*, 
+    (select avg(salary)
+    from employees 
+    where department_id = d.department_id) "avg_Salary"
+from departments d
+where d.department_id = (
+    select department_id
+    from employees
+    having avg(salary) = (
+        select min(avg(salary))
+        from employees
+        group by department_id)
+    group by department_id);
+
+		
+--44. 查询平均工资最高的 job 信息
+select *
+from jobs
+where job_id = (
+    select job_id 
+    from employees
+    having avg(salary) = (
+        select max(avg(salary))
+        from employees
+        group by job_id)
+    group by job_id
+    );
+	
+--45. 查询平均工资高于公司平均工资的部门有哪些?
+select department_id, avg(salary)
+from employees
+where department_id is not null
+having avg(salary) > (
+    select avg(salary)
+    from employees)
+group by department_id;
+
+--46. 查询出公司中所有 manager 的详细信息.
+select *
+from employees
+where employee_id in (
+    select manager_id
+    from employees
+);
+	
+--47. 各个部门中 最高工资中最低的那个部门的 最低工资是多少
+select min(salary)
+from employees
+where department_id = (
+    select department_id
+    from employees
+    having max(salary) = (
+        select min(max(salary))
+        from employees
+        group by department_id)
+    group by department_id);
+
+--48. 查询平均工资最高的部门的 manager 的详细信息: last_name, department_id, email, salary
+select last_name, department_id, email, salary
+from employees
+where employee_id in (
+    select manager_id
+    from employees
+    where department_id = (
+        select department_id
+        from employees
+        having avg(salary) = (
+            select max(avg(salary))
+            from employees
+            group by department_id
+        )
+        group by department_id
+    )
+);
+
+--49. 查询 1999 年来公司的人所有员工的最高工资的那个员工的信息.
+select *
+from employees
+where salary = (
+    select max(salary)
+    from employees
+    where to_char(hire_date, 'yyyy') = '1999'
+) and to_char(hire_date, 'yyyy') = '1999';
+        
+--50. 多行子查询的 any 和 all
+
+select department_id
+from employees
+group by department_id
+having avg(salary) >= any(
+                          --所有部门的平均工资
+                          select avg(salary)
+                          from employees
+                          group by department_id
+                       );
+
+--any 和任意一个值比较, 所以其条件最为宽松, 所以实际上只需和平均工资最低的比较, 返回所有值
+--而 all 是和全部的值比较, 条件最为苛刻, 所以实际上返回的只需和平均工资最高的比较, 所以返回平均工资最高的 department_id
+
+
+
+
+-- 1.查询和Zlotkey相同部门的员工姓名和雇用日期
+select last_name, hire_date
+from employees
+where department_id = (
+    select department_id
+    from employees
+    where last_name = 'Zlotkey'
+)and last_name != 'Zlotkey';
+- 2.查询工资比公司平均工资高的员工的员工号，姓名和工资。
+select employee_id, last_name, salary
+from employees
+where salary > (
+    select avg(salary)
+    from employees
+);
+
+-- 3.查询各部门中工资比本部门平均工资高的员工的员工号, 姓名和工资
+select employee_id, last_name, salary
+from employees e1
+where salary > (
+    select avg(salary)
+    from employees e2
+    where e1.department_id = e2.department_id
+    group by department_id
+);
+
+-- 4.查询和姓名中包含字母u的员工在相同部门的员工的员工号和姓名
+select employee_id, last_name
+from employees
+where department_id in (
+    select department_id
+    from employees
+    where last_name like '%u%'
+) and last_name not like '%u%';
+
+
+-- 5. 查询在部门的location_id为1700的部门工作的员工的员工号
+select employee_id
+from employees
+where department_id in (
+                       select department_id
+                       from departments
+                       where location_id = 1700
+                       );
+- 6.查询管理者是King的员工姓名和工资
+select last_name,salary
+from employees
+where manager_id in (
+                   select employee_id
+                   from employees
+                   where last_name = 'King'
+                   );
+                   
+                   
+-- ***********************************
+--             第七节
+-- ***********************************
+
+-- 创建和管理表
+
+
+-- *************************************
+--             第八节
+-- *************************************
+-- 数据处理
+
+
+-- **************************************
+--              第九节
+-- **************************************
+-- 约束
+
+
+-- **************************************
+--              第十节
+-- **************************************
+-- 视图
+
+
+-- **************************************
+--              第十一节
+-- **************************************
+-- 其他数据库对象
