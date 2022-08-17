@@ -773,9 +773,6 @@ having avg(salary) >= any(
 --any 和任意一个值比较, 所以其条件最为宽松, 所以实际上只需和平均工资最低的比较, 返回所有值
 --而 all 是和全部的值比较, 条件最为苛刻, 所以实际上返回的只需和平均工资最高的比较, 所以返回平均工资最高的 department_id
 
-
-
-
 -- 1.查询和Zlotkey相同部门的员工姓名和雇用日期
 select last_name, hire_date
 from employees
@@ -835,27 +832,436 @@ where manager_id in (
 -- ***********************************
 
 -- 创建和管理表
+--  对象                    描述
+--   表                 基本的数据存储集合，有行与列构成
+--  视图                从表中抽出的逻辑上相关的数据集合
+--  序列                提供有规律的数值
+--  索引                提高查询的效率
+-- 同义词               给对象起别名
+select * from user_tables;
+
+select table_name from user_tables;
+
+-- 白手起家
+create table emp1 (
+    id number(10),
+    name varchar2(20),
+    salary number(10, 2),
+    hire_date date
+);
+
+-- 依托于现有的表
+create table emp2
+as
+select employee_id id, last_name name, hire_date, salary
+from employees;
+
+select * from emp2;
+
+create table emp3
+as
+select employee_id id, last_name name, hire_date, salary
+from employees
+where employee_id = -1;
+
+select * from emp3;
+
+-- varchar2(size) 可变长度数据
+-- char(size)  定长字符数据
+-- number(p, s)  可变长度数据
+-- date   日期型变量
+-- long 可变长字符数据，最大可到2G
+-- clob   字符数据，最大可达4G
+-- RAW(long RAW) 原始的二进制数据
+-- blob   二进制数据，最大可达到4G
+-- BFILE   存储外部文件的二进制数据，最大可达到4G
+-- ROWID   行地址
+
+alter table emp1
+add (email varchar2(20));
+
+select * from emp1;
+-- 表中有数据的之前的数据不会修改
+alter table emp1
+modify(salary number(20, 2) default 2000);
+
+desc emp1;
+
+alter table emp1
+drop column email;
+
+alter table emp1
+rename column salary to SAL;
+
+
+-- truncate语句不能回滚 相当于 delete from + commit
+delete from emp2;
+
+commit;
+
+rollback;
+
+select * from emp2;
+
+-- ==================================
+-- 总结
+-- create table
+-- alter table
+-- drop table     删除
+-- rename * to *
+-- truncate table 清空
+-- 以上命令全部不可以回滚！！！
+
+-- 1.创建表dept1
+--name	Null?	type
+--id		Number(7)
+--name		Varchar2(25)
+create table dept1(
+    id number(7),
+    name varchar2(25)
+);
+
+-- 2.将表departments中的数据插入新表dept2中
+create table dept2
+as
+select * from departments;
+
+-- 3.创建表emp5
+--name	Null?	type
+--id		Number(7)
+--First_name		Varchar2(25)
+--Last_name		Varchar2(25)
+--Dept_id		Number(7)
+create table emp5(
+    id number(7),
+    first_name varchar2(25),
+    last_name varchar2(25),
+    dept_id number(7)
+);
+
+-- 4.将列Last_name的长度增加到50
+alter table emp5
+modify (last_name varchar2(50));
+
+-- 5.根据表employees创建employees2
+create table employees2
+as
+select * from employees;
+
+-- 6.删除表emp5
+drop table emp5;
+
+-- 7.将表employees2重命名为emp5
+rename employees2 to emp5;
+
+-- 8.在表dept和emp5中添加新列test_column，并检查所作的操作
+alter table dept
+add(test_column number(10));
+
+alter table emp5
+add(test_column number(10));
+
+desc dept;
+-- 9.在表dept和emp5中将列test_column设置成不可用，之后删除
+alter table emp5
+set unused column test_column;
+
+alter table emp5
+drop unused columns;
+
+-- 10.直接删除表emp5中的列 dept_id
+alter table emp5
+drop column dept_id;
 
 
 -- *************************************
 --             第八节
 -- *************************************
 -- 数据处理
+-- insert into
+create table emp1 (
+    id number(10),
+    name varchar2(20),
+    hire_date date,
+    salary number(10, 2)
+);
+insert into emp1
+values(1001, 'AA', to_date('1999-09-18', 'yyyy-mm-dd'), 10000);
+
+insert into emp1
+values(1002, 'BB', to_date('2000-01-01', 'yyyy-mm-dd'), null);
+
+insert into emp1(id, name, hire_date)
+values(1003, 'CC', to_date('2001-02-03', 'yyyy-mm-dd'));
+
+-- 从其他表拷贝数据
+insert into emp1(id, hire_date, name, salary)
+select employee_id, hire_date, last_name, salary
+from employees
+where department_id = 80;
+
+-- 在SQL语句中使用 & 变量指定列值（没啥卵用？）
+insert into emp1(employee_id, last_name, salary, hire_date)
+values(&id, '&name', &salary, '&hire_date');
+
+update emp1
+set salary = 12000
+where id > 1000;
+
+create table emp_copy
+as 
+select * from employees;
+
+-- 更新 114号员工的工资和工资使其与 205号员工相同
+update emp_copy
+set job_id = (
+    select job_id
+    from emp_copy
+    where employee_id = 205),
+    salary = (
+    select salary
+    from emp_copy
+    where employee_id = 205)
+where employee_id = 104;
+
+update emp_copy
+set department_id = (
+    select department_id
+    from emp_copy
+    where employee_id = 100)
+where job_id = (
+    select job_id
+    from emp_copy
+    where employee_id = 200);
 
 
--- **************************************
---              第九节
--- **************************************
--- 约束
+rollback;
+
+commit;
+
+select * from emp_copy;
 
 
--- **************************************
---              第十节
--- **************************************
--- 视图
+-- 数据库事务
+-- 一组逻辑操作单元使数据从一种状态变换成另一种状态
+update emp_copy
+set department_id = (
+    select department_id
+    from emp_copy
+    where employee_id = 105)
+where job_id = (
+    select job_id
+    from emp_copy
+    where employee_id = 200);
+
+savepoint A;
+
+delete from emp_copy
+where employee_id = 105;
+
+savepoint B;
+
+rollback to savepoint A;
+
+rollback to savepoint B;
+
+-- 其他用户不能看到当前用户所做的改变，直到当前用户结束事务
+
+-- DML语句所涉及到的行被锁定，其他用户不能操作
+
+-- 55. 更改 108 员工的信息: 使其工资变为所在部门中的最高工资, job 变为公司中平均工资最低的 job
+update emp_copy e1
+set salary = (
+    select max(salary)
+    from emp_copy
+    where department_id = (
+        select department_id
+        from emp_copy
+        where employee_id = 108)),
+    job_id = (
+        select job_id
+        from emp_copy
+        group by job_id
+        having avg(salary) = (
+            select min(avg(salary))
+            from emp_copy
+            group by job_id)
+    )
+where employee_id = 108;
+		
+-- 56. 删除 108 号员工所在部门中工资最低的那个员工.
+delete from emp_copy e
+where salary = (
+    select min(salary)
+    from emp_copy
+    where department_id = e.department_id)
+    and 
+    department_id = (
+            select department_id
+            from emp_copy
+            where employee_id = 108);
+
+-- 运行以下脚本创建表my_employee
+Create table my_employee (  
+    id         number(3),
+    first_name varchar2(10),
+    Last_name  varchar2(10),
+    User_id    varchar2(10),
+    Salary     number(5));
+    
+desc my_employee;
+
+INSERT INTO my_employee
+	values(1, 'patel','Palph', 'Rpatel', 895);
+INSERT INTO my_employee
+    values(2, 'Dancs', 'Betty', 'Bdancs', 860);
+INSERT INTO my_employee   
+    values(3, 'Biri', 'Ben', 'Bbiri', 1100);
+INSERT INTO my_employee   
+    values(4,'Newman', 'Chad', 'Cnewman', 750);
+INSERT INTO my_employee   
+    values(5, 'Ropeburn', 'Audrey', 'Aropebur', 1550);
+    
+commit;
+
+UPDATE my_employee
+SET last_name = 'drelxer'
+WHERE id = 3;
+
+UPDATE my_employee
+SET salary = 1000
+WHERE salary< 900;
+
+drop table my_employee;
 
 
--- **************************************
---              第十一节
--- **************************************
--- 其他数据库对象
+    
+
+
+/*************************************************************************************************/
+--	                          第 9 章
+/*************************************************************************************************/	
+-- 57. 定义非空约束
+
+	1). 非空约束只能定义在列级.
+	
+	2). 不指定约束名
+	create table emp2 (name varchar2(30) not null, age number(3));
+	
+	3). 指定约束名	
+	create table emp3(name varchar2(30) constraint name_not_null not null, age number(3));
+	
+-- 58. 唯一约束
+	1). 行级定义
+		
+		①. 不指定约束名
+		create table emp2 (name varchar2(30) unique, age number(3));
+		
+		②. 指定约束名
+		create table emp3 (name varchar2(30) constraint name_uq unique, age number(3));
+		
+	2). 表级定义: 必须指定约束名
+		①. 指定约束名
+		create table emp3 (name varchar2(30), age number(3), constraint name_uq unique(name));
+
+-- 58.1 主键约束： 
+		
+-- 59. 外键约束
+	1). 行级定义
+		
+		①. 不指定约束名
+		create table emp2(
+       emp_id number(6), 
+       name varchar2(25), 
+       dept_id number(4) references dept2(dept_id))
+		
+		②. 指定约束名
+		create table emp3(
+       emp_id number(6), 
+       name varchar2(25), 
+       dept_id number(4) constraint dept_fk3 references dept2(dept_id))
+		
+	2). 表级定义: 必须指定约束名
+
+		①. 指定约束名
+		create table emp4(
+       emp_id number(6), 
+       name varchar2(25), 
+       dept_id number(4),
+       constraint dept_fk2 foreign key(dept_id) references dept2(dept_id))
+	
+60. 约束需要注意的地方
+
+	1). ** 非空约束只能定义在列级
+
+	2). ** 唯一约束的列值可以为空
+
+	3). ** 外键引用的列起码要有一个唯一约束		
+	
+61. 建立外键约束时的级联删除问题:
+	1). 级联删除:
+	
+	create table emp2(
+       id number(3) primary key, 
+       name varchar2(25) unique, 
+       dept_id references dept2(dept_id) on delete cascade)
+	
+	2). 级联置空
+	
+	create table emp3(
+       id number(3) primary key, 
+       name varchar2(25) unique, 
+       dept_id references dept2(dept_id) on delete set null)
+       
+62. 查询员工表中 salary 前 10 的员工信息.
+
+select last_name, salary
+from (select last_name, salary from employees order by salary desc)
+where rownum <= 10
+	
+	说明: rownum "伪列" ---- 数据表本身并没有这样的列, 是 oracle 数据库为每个数据表 "加上的"  列. 可以标识行号.
+	      默认情况下 rownum 按主索引来排序. 若没有主索引则自然排序.
+	 
+注意: **对 ROWNUM 只能使用 < 或 <=, 而是用 =, >, >= 都将不能返回任何数据.   
+
+63. 查询员工表中 salary 10 - 20 的员工信息.    
+
+select *
+from(
+  select rownum rn, temp.*
+  from (
+    select last_name, salary
+    from employees e
+    order by salary desc
+  ) temp
+)
+where rn > 10 and rn < 21
+
+64. 对 oralce 数据库中记录进行分页: 每页显示 10 条记录, 查询第 5 页的数据 
+
+select employee_id, last_name, salary
+from (
+        select rownum rn, employee_id, last_name, salary
+        from employees
+     ) e
+where e.rn <= 50 and e.rn > 40   
+
+注意: **对 oracle 分页必须使用 rownum "伪列"!
+
+select employee_id, last_name, salary
+from (
+        select rownum rn, employee_id, last_name, salary
+        from employees
+     ) e
+where e.rn <= pageNo * pageSize and e.rn > (pageNo - 1) * pageSize
+
+65. 创建序列: 
+
+1). create sequence hs increment by 10 start with 10
+
+2). NEXTVAL 应在 CURRVAL 之前指定 ，二者应同时有效
+
+
+65. 序列通常用来生成主键:
+
+INSERT INTO emp2 VALUES (emp2_seq.nextval, 'xx', ...) 
