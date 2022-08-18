@@ -1434,37 +1434,172 @@ where department_id = 80
 with read only;
 
 
-
-
 -- ********************************************
 --                     第十一节
 -- ********************************************
+-- 常见的数据库对象
+-- 序列 提供有规律的数值 主要用来提供主键值
+create sequence emqseq
+increment by 10 -- 每次增长10
+start with 10 -- 从10开始增长
+maxvalue 100 -- 提供的最大值
+cycle -- 需要循环
+nocache; -- 不需要缓存登陆
 
+select emqseq.nextval from dual;
 
+select emqseq.currval from dual;
 
+create table emp01
+as
+select employee_id, last_name, salary
+from employees
+where 1 = 2;
+
+insert into emp01
+values(emqseq.nextval, 'DD', 3400);
+select * from emp01;
+
+alter sequence emqseq
+increment by 1
+nocycle;
+
+-- 序列在下列情况下出现裂缝
+-- 回滚 sequence会自动提交
+-- 系统异常
+-- 多个表同时使用同一序列
+
+-- 索引 提高查询的效率
+
+-- 同义词 给对象取别名
 
 
 -- ********************************************
 --                     第十二节
 -- ********************************************
-
-
-
-
+-- 选择system登陆
 
 
 -- ********************************************
 --                     第十三节
 -- ********************************************
+-- SET 操作符
+-- 集合
+-- UNION / UNION ALL 
+-- 1, 2, 3, 4 / 1, 2, 3 ; 2, 4
+select * from employees;
 
+create table emp1
+as
+select employee_id, department_id
+from employees
+where department_id in (70, 80);
 
+create table emp2
+as
+select employee_id, department_id
+from employees
+where department_id in (80, 90);
 
+select *
+from emp1
+union
+select *
+from emp2;
+
+select *
+from emp1
+union all
+select *
+from emp2;
+
+-- 查询结果默认以第一列从小到大
+
+-- INTERSECT 交集
+select *
+from emp1
+intersect
+select *
+from emp2;
+
+-- MINUS 差集
+select *
+from emp1
+minus
+select *
+from emp2;
+
+column a_dummy noprint
+select 'study at' as "My_Dream", 2 a_dummy
+from dual
+union
+select 'I want to', 1
+from dual
+union
+select 'github.com', 3
+from dual
+order by 2 asc;
 
 
 -- ********************************************
 --                     第十四节
 -- ********************************************
+-- 多列子查询
+-- 查询与141号或174号员工的manager_id和department_id
+-- 相同的其他员工的employee_id, manager_id, department_id
+select employee_id, manager_id, department_id
+from employees
+where (manager_id, department_id) in (
+    select manager_id, department_id
+    from employees
+    where employee_id in (141, 174));
+and employee_id not in (141, 174);
 
+-- 在from中使用子查询
+select last_name, e2.department_id, salary, avg_sal
+from employees e1, (select department_id, avg(salary) avg_sal from employees group by department_id) e2
+where e1.department_id = e2.department_id and salary > avg_sal;
+
+-- 在SQL中使用单列子查询
+select employee_id, last_name, (case department_id
+                                        when (select department_id
+                                                from departments
+                                                where location_id = 1800)
+                                            then 'Canada'
+                                        else 'USA' end) "Location"
+from employees;
+
+-- 查询员工的employee_id, last_name, 要求按照员工的department_name排序
+select employee_id, last_name
+from employees e1
+order by (select department_name
+from departments d
+where e1.department_id = d.department_id) asc;
+
+-- 书写相关子查询
+-- 相关子查询：按照一行接一行的顺序执行，主查询的每一行都执行一次子查询
+-- 1. 从主查询中获取候选列
+-- 2. 子查询使用主查询的数据
+-- 3. 如果满足查询的条件则返回该行
+select last_name, salary, department_id
+from employees outer
+where salary > (
+    select avg(salary)
+    from employees
+    where department_id = outer.department_id)
+
+-- 如果employee表中employee_id 与 job_id 与job_histroy表中employee_id 相同的数目不小于2
+-- 输出这些相同id的员工的employee_id, last_name和其job_id
+select employee_id, last_name, job_id
+from employees
+where 2 <= (
+);
+
+-- 使用EXISTS 和 NOT EXISTS 操作符
+
+-- 使用子查询更新和删除数据
+
+-- 使用 WITH 子句
 
 
 
