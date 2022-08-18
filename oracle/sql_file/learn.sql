@@ -1141,6 +1141,112 @@ drop table my_employee;
 /*************************************************************************************************/
 --	                          第 9 章
 /*************************************************************************************************/	
+-- 约束
+-- NOT NULL 只能作用于列上
+create table emp2(
+    id number(20) constraint id_not_null not null,
+    name varchar2(20) not null,
+    salary number(10, 2)
+);
+drop table emp2;
+
+-- UNIQUE 唯一约束
+create table emp2(
+-- 列级约束
+    id number(20) constraint id_uk unique,
+    name varchar2(20) constraint name_not_null not null,
+    salary number(10, 2),
+    email varchar2(20)，
+-- 表级约束
+    constraint email_uk unique(email)
+);
+
+-- PRIMARY KEY 唯一存在且数据唯一
+create table emp2(
+-- 列级约束
+    id number(20),
+    name varchar2(20) constraint name_not_null not null,
+    department_id number(20) not null,
+    salary number(10, 2),
+    email varchar2(20)，
+-- 表级约束
+    constraint email_uk unique(email),
+    constraint id_pk primary key(id)
+);
+
+
+
+-- FOREIGN KEY
+create table emp2(
+-- 列级约束
+    id number(20),
+    name varchar2(20) constraint name_not_null not null,
+    department_id number(20) not null,
+    salary number(10, 2),
+    email varchar2(20)，
+-- 表级约束
+    constraint email_uk unique(email),
+    constraint id_pk primary key(id),
+    constraint department_fk foreign key(department_id) 
+        references departments(department_id)
+);
+
+create table emp2(
+-- 列级约束
+    id number(20),
+    name varchar2(20) constraint name_not_null not null,
+    department_id number(20) not null,
+    salary number(10, 2),
+    email varchar2(20)，
+-- 表级约束
+    constraint email_uk unique(email),
+    constraint id_pk primary key(id),
+    constraint department_fk foreign key(department_id) 
+        references departments(department_id) on delete set null -- departments 中该 department_id 被删除的时候emp2中的department_id置空
+);
+
+
+
+-- CHECK
+create table emp2(
+-- 列级约束
+    id number(20),
+    name varchar2(20) constraint name_not_null not null,
+    department_id number(20) not null,
+    salary number(10, 2) check(salary > 1500 and salary < 100000),
+    email varchar2(20)，
+-- 表级约束
+    constraint email_uk unique(email),
+    constraint id_pk primary key(id),
+    constraint department_fk foreign key(department_id) 
+        references departments(department_id) on delete set null
+);
+
+-- 使用Alter table 语句
+-- 添加或者删除约束 但是不能修改约束
+-- 有效化或者无效化约束
+-- 添加 NOT NULL 约束要使用MODIFY
+alter table emp2
+drop constraint email_uk;
+
+
+alter table emp2
+add constraint email_uk unique(email);
+
+alter table emp2
+disable constraint email_uk;
+
+alter table emp2
+enable constraint email_uk;
+
+-- 查询定义约束的列
+select constraint_name, column_name
+from user_cons_columns
+where table_name = 'EMP2';
+
+
+
+/*
 -- 57. 定义非空约束
 
 	1). 非空约束只能定义在列级.
@@ -1265,3 +1371,101 @@ where e.rn <= pageNo * pageSize and e.rn > (pageNo - 1) * pageSize
 65. 序列通常用来生成主键:
 
 INSERT INTO emp2 VALUES (emp2_seq.nextval, 'xx', ...) 
+*/
+
+-- ********************************************
+--                     第十节
+-- ********************************************
+-- 视图 View
+-- 控制数据访问
+-- 简化查询
+-- 避免重复访问相同的数据
+create view emp_view
+as
+select employee_id, last_name, salary
+from employees
+where department_id = 80;
+
+select *
+from emp_view;
+
+-- Top-N 分析
+select rownum, employee_id, last_name, salary
+from (
+    select employee_id, last_name, salary
+    from employees
+    order by salary desc)
+where rownum <= 10;
+
+-- 注意 对 ROWNUM 只能使用 < 或者 <= 而使用 = > >= 都无法获取任何数据！！！
+-- 可以创建新列来模拟这个操作
+select rn, employee_id, last_name, salary
+from(
+    select rownum rn, employee_id, last_name, salary
+    from (
+        select employee_id, last_name, salary
+        from employees
+        order by salary desc
+        )
+)
+where rn <= 50 and rn >= 40;
+
+create or replace view employee_vu
+as
+select last_name, employee_id, department_id
+from employees;
+
+
+desc employee_vu;
+
+select * from employee_vu;
+
+create or replace view employee_vu
+as
+select last_name, employee_id, department_id
+from employees
+where department_id = 80;
+
+create or replace view employee_vu
+as
+select last_name, employee_id, department_id
+from employees
+where department_id = 80
+with read only;
+
+
+
+
+-- ********************************************
+--                     第十一节
+-- ********************************************
+
+
+
+
+
+-- ********************************************
+--                     第十二节
+-- ********************************************
+
+
+
+
+
+
+-- ********************************************
+--                     第十三节
+-- ********************************************
+
+
+
+
+
+-- ********************************************
+--                     第十四节
+-- ********************************************
+
+
+
+
+
