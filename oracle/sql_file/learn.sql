@@ -1586,16 +1586,35 @@ from employees outer
 where salary > (
     select avg(salary)
     from employees
-    where department_id = outer.department_id)
+    where department_id = outer.department_id);
 
--- 如果employee表中employee_id 与 job_id 与job_histroy表中employee_id 相同的数目不小于2
+-- 如果employee表中employee_id 与 job_histroy表中employee_id 相同的数目不小于2
 -- 输出这些相同id的员工的employee_id, last_name和其job_id
 select employee_id, last_name, job_id
-from employees
-where 2 <= (
+from employees e
+where 2 <= (select count(*)
+            from job_history j
+            where e.employee_id = j.employee_id  
 );
 
 -- 使用EXISTS 和 NOT EXISTS 操作符
+-- 检查在子查询中是否存在满足条件的行
+-- 如果在子查询中寻在满足条件的行 不再子查询中继续查找 条件返回TRUE
+-- 如果在子查询中不存在满足条件的行 条件返回FALSE 继续在子查询中查找
+
+select employee_id, last_name, job_id, department_id
+from employees e1
+where exists (
+        select 'A'
+        from employees e2
+        where e1.employee_id = e2.manager_id);
+
+select department_id, department_name
+from departments d
+where not exists(
+    select 'C'
+    from employees
+    where department_id = d.department_id);
 
 -- 使用子查询更新和删除数据
 

@@ -14,18 +14,18 @@ typedef char *sds;
 struct sdshdr {
   int len; // buf中已占用空间的长度
   int free; // buf中剩余可用空间的长度
-  char buf[]; // 数据就空间
+  char buf[]; // 数据空间
 };
 
 static inline size_t sdslen(const sds s) {
   struct sdshdr *sh = (void *)(s - (sizeof(struct sdshdr)));
-  return sh->free;
+  return sh->len;
 }
 
 
 size_t sdsavail(const sds s) {
   struct sdshdr *sh = (void *)(s - sizeof(struct sdshdr));
-  return sh->len;
+  return sh->free;
 }
 
 sds sdsnewlen(const void *init, size_t initlen);
